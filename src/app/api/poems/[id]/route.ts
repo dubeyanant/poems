@@ -11,16 +11,11 @@ interface Poem {
 	lines: string[];
 }
 
-// Context includes params object with route segments
-interface RouteContext {
-	params: {
-		id: string; // The dynamic segment [id] will be here
-	};
-}
-
-export async function GET(request: NextRequest, context: RouteContext) {
-	const { params } = context;
-	const id = params.id;
+export async function GET(
+	request: NextRequest,
+	{ params }: { params: Promise<{ id: string }> },
+) {
+	const id = (await params).id;
 
 	// Validate the ID format before querying
 	if (!id || !ObjectId.isValid(id)) {
