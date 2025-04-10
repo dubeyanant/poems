@@ -1,7 +1,6 @@
 import type { ObjectId } from "mongodb";
 
 export interface Poem {
-	_id?: ObjectId; // MongoDB automatically adds this
-	date: Date;
+	_id: string; // Custom ID in DDMMYY format
 	lines: string[];
 }

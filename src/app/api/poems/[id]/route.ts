@@ -1,7 +1,6 @@
-import connectToDatabase from "@/lib/mongodb"; // Adjust path if needed
-import type { Poem } from "@/types/poem"; // Import the shared interface
+import connectToDatabase from "@/lib/mongodb";
+import type { Poem } from "@/types/poem";
 import type { Collection } from "mongodb";
-import { ObjectId } from "mongodb";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -11,11 +10,11 @@ export async function GET(
 ) {
 	const id = (await params).id;
 
-	// Validate the ID format before querying
-	if (!id || !ObjectId.isValid(id)) {
+	// Validate ID format (DDMMYY = 6 digits)
+	if (!id || !/^\d{6}$/.test(id)) {
 		return NextResponse.json(
-			{ message: "Invalid poem ID format." },
-			{ status: 400 }, // Bad Request
+			{ message: "Invalid poem ID format. Expected DDMMYY (6 digits)." },
+			{ status: 400 },
 		);
 	}
 
@@ -23,19 +22,18 @@ export async function GET(
 		const { db } = await connectToDatabase();
 		const poemsCollection: Collection<Poem> = db.collection("poems");
 
-		// Find the poem by its _id
-		// Important: Convert the string ID from params into a MongoDB ObjectId
-		const poem = await poemsCollection.findOne({ _id: new ObjectId(id) });
+		// Find the poem by its _id (now a string)
+		const poem = await poemsCollection.findOne({ _id: id });
 
 		if (!poem) {
 			return NextResponse.json(
 				{ message: `Poem with ID ${id} not found.` },
-				{ status: 404 }, // Not Found
+				{ status: 404 },
 			);
 		}
 
 		// Return the found poem
-		return NextResponse.json(poem, { status: 200 }); // OK
+		return NextResponse.json(poem, { status: 200 });
 
 		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	} catch (error: any) {
@@ -45,7 +43,7 @@ export async function GET(
 				message: `Failed to fetch poem with ID ${id}`,
 				error: error.message,
 			},
-			{ status: 500 }, // Internal Server Error
+			{ status: 500 },
 		);
 	}
 }
