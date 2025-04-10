@@ -15,6 +15,37 @@ interface RequestBody {
 	line?: string;
 }
 
+export async function GET(request: NextRequest) {
+	try {
+		const { db } = await connectToDatabase();
+		const poemsCollection: Collection<Poem> = db.collection("poems");
+
+		// Find the latest poem by sorting by date descending and taking the first one
+		const latestPoem = await poemsCollection.findOne(
+			{}, // No filter needed
+			{ sort: { date: -1 } }, // Sort by date descending
+		);
+
+		if (!latestPoem) {
+			return NextResponse.json(
+				{ message: "No poems found" },
+				{ status: 404 },
+			);
+		}
+
+		// Return the found poem
+		return NextResponse.json(latestPoem, { status: 200 });
+
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	} catch (error: any) {
+		console.error("Failed to fetch latest poem:", error);
+		return NextResponse.json(
+			{ message: "Failed to fetch latest poem", error: error.message },
+			{ status: 500 },
+		);
+	}
+}
+
 export async function POST(request: NextRequest) {
 	try {
 		const { db } = await connectToDatabase();
