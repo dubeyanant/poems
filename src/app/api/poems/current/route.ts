@@ -1,40 +1,51 @@
-import connectToDatabase from "@/lib/mongodb"; // Adjust path if needed
-import type { Collection, ObjectId } from "mongodb";
+import connectToDatabase from "@/lib/mongodb";
+import type { Poem } from "@/types/poem";
+import type { Collection } from "mongodb";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-
-// Define an interface for your Poem data structure
-interface Poem {
-	_id: ObjectId; // MongoDB always adds this
-	date: Date;
-	lines: string[];
-}
 
 // Define expected request body structure
 interface RequestBody {
 	line?: string;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
 	try {
 		const { db } = await connectToDatabase();
 		const poemsCollection: Collection<Poem> = db.collection("poems");
 
-		// Find the latest poem by sorting by date descending and taking the first one
-		const latestPoem = await poemsCollection.findOne(
-			{}, // No filter needed
-			{ sort: { date: -1 } }, // Sort by date descending
-		);
+		// Get current date in DDMMYY format
+		const now = new Date();
+		const day = now.getDate().toString().padStart(2, "0");
+		const month = (now.getMonth() + 1).toString().padStart(2, "0");
+		const year = now.getFullYear().toString().slice(-2);
+		const todayId = `${day}${month}${year}`;
 
-		if (!latestPoem) {
+		// Try to find today's poem first
+		let poem = await poemsCollection.findOne({ _id: todayId });
+
+		// If no poem exists for today, get the latest poem
+		if (!poem) {
+			// Sort IDs in descending order to get the most recent one
+			const poems = await poemsCollection
+				.find()
+				.sort({ _id: -1 })
+				.limit(1)
+				.toArray();
+
+			if (poems && poems.length > 0) {
+				poem = poems[0];
+			}
+		}
+
+		if (!poem) {
 			return NextResponse.json(
 				{ message: "No poems found" },
 				{ status: 404 },
 			);
 		}
 
-		// Return the found poem
-		return NextResponse.json(latestPoem, { status: 200 });
+		return NextResponse.json(poem, { status: 200 });
 
 		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	} catch (error: any) {
@@ -71,62 +82,72 @@ export async function POST(request: NextRequest) {
 					message:
 						'Missing or invalid "line" field in request body. It must be a non-empty string.',
 				},
-				{ status: 400 }, // Bad Request
+				{ status: 400 },
 			);
 		}
 
 		// 2. Validate Word Count (max 10 words)
-		// Trim whitespace from ends and split by one or more whitespace characters
 		const words = line.trim().split(/\s+/);
 		if (words.length > 10) {
 			return NextResponse.json(
 				{
 					message: `Input line has ${words.length} words. Maximum allowed is 10.`,
 				},
-				{ status: 400 }, // Bad Request
+				{ status: 400 },
 			);
 		}
 
-		// 3. Find the Latest Poem
-		// Sort by 'date' in descending order (-1) and get the first one
-		const latestPoem = await poemsCollection.findOne(
-			{}, // No filter, find any document
-			{ sort: { date: -1 } }, // Sort by date descending
-		);
+		// 3. Get current date in DDMMYY format
+		const now = new Date();
+		const day = now.getDate().toString().padStart(2, "0");
+		const month = (now.getMonth() + 1).toString().padStart(2, "0");
+		const year = now.getFullYear().toString().slice(-2);
+		const todayId = `${day}${month}${year}`;
+
+		// 4. Find the Latest Poem
+		let latestPoem = await poemsCollection.findOne({ _id: todayId });
 
 		if (!latestPoem) {
-			return NextResponse.json(
-				{ message: "No poems found in the database to update." },
-				{ status: 404 }, // Not Found
-			);
+			// If no poem exists for today, get the most recent poem
+			const poems = await poemsCollection
+				.find()
+				.sort({ _id: -1 })
+				.limit(1)
+				.toArray();
+
+			if (poems && poems.length > 0) {
+				latestPoem = poems[0];
+			} else {
+				return NextResponse.json(
+					{ message: "No poems found in the database to update." },
+					{ status: 404 },
+				);
+			}
 		}
 
-		// 4. Update the Latest Poem
-		// Use the $push operator to append the new line to the 'lines' array
+		// 5. Update the Poem
 		const updateResult = await poemsCollection.updateOne(
-			{ _id: latestPoem._id }, // Filter by the ID of the latest poem
-			{ $push: { lines: line } }, // Append the validated line to the 'lines' array
+			{ _id: latestPoem._id },
+			{ $push: { lines: line } },
 		);
 
 		if (updateResult.modifiedCount !== 1) {
-			// This might happen if the document was deleted between findOne and updateOne (rare)
 			console.error(
 				"Failed to update the poem. Document might not exist or was not modified.",
 				updateResult,
 			);
 			return NextResponse.json(
 				{ message: "Failed to append line to the latest poem." },
-				{ status: 500 }, // Internal Server Error
+				{ status: 500 },
 			);
 		}
 
-		// 5. Fetch the updated document to return it (optional, but good practice)
+		// 6. Fetch the updated document
 		const updatedPoem = await poemsCollection.findOne({
 			_id: latestPoem._id,
 		});
 
 		if (!updatedPoem) {
-			// Should technically not happen if updateResult.modifiedCount was 1
 			console.error(
 				"Failed to retrieve the updated poem after successful update.",
 			);
@@ -141,16 +162,14 @@ export async function POST(request: NextRequest) {
 
 		console.log(`Line added to poem ${updatedPoem._id}: "${line}"`);
 
-		// 6. Return Success Response
-		return NextResponse.json(updatedPoem, { status: 200 }); // OK
+		return NextResponse.json(updatedPoem, { status: 200 });
 
 		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	} catch (error: any) {
 		console.error("Failed to process request:", error);
-		// Return a generic error response
 		return NextResponse.json(
 			{ message: "Failed to process request", error: error.message },
-			{ status: 500 }, // Internal Server Error
+			{ status: 500 },
 		);
 	}
 }
