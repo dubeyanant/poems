@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export default function Home() {
+export default function Poem() {
 	const [currentDate, setCurrentDate] = useState("");
 	const [userInput, setUserInput] = useState("");
 	const [isFocused, setIsFocused] = useState(false);
