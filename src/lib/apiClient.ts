@@ -6,7 +6,7 @@ interface QuoteResponse {
 }
 
 interface PoemResponse {
-	id: string;
+	_id: string;
 	lines: string[];
 }
 
