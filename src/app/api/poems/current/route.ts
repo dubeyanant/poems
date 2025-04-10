@@ -1,14 +1,8 @@
 import connectToDatabase from "@/lib/mongodb"; // Adjust path if needed
-import type { Collection, ObjectId } from "mongodb";
+import type { Poem } from "@/types/poem"; // Import the shared interface
+import type { Collection } from "mongodb";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-
-// Define an interface for your Poem data structure
-interface Poem {
-	_id: ObjectId; // MongoDB always adds this
-	date: Date;
-	lines: string[];
-}
 
 // Define expected request body structure
 interface RequestBody {

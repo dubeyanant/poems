@@ -1,13 +1,7 @@
 import connectToDatabase from "@/lib/mongodb"; // Adjust path if needed
-import type { Collection, ObjectId } from "mongodb";
+import type { Poem } from "@/types/poem"; // Import the shared interface
+import type { Collection } from "mongodb";
 import { NextResponse } from "next/server";
-
-// Define an interface for your Poem data structure (optional but recommended)
-interface Poem {
-	_id?: ObjectId; // MongoDB automatically adds this
-	date: Date;
-	lines: string[];
-}
 
 export async function POST() {
 	try {
