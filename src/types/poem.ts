@@ -1,6 +1,13 @@
-import type { ObjectId } from "mongodb";
-
 export interface Poem {
-	_id: string; // Custom ID in DDMMYY format
+	_id: string;
 	lines: string[];
+}
+
+export interface QuoteResponse {
+	quote: string;
+	author: string;
+}
+
+export interface AddLineRequest {
+	line: string;
 }

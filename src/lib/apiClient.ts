@@ -1,18 +1,4 @@
-// Define interfaces for API responses and requests
-
-interface QuoteResponse {
-	quote: string;
-	author: string;
-}
-
-interface PoemResponse {
-	_id: string;
-	lines: string[];
-}
-
-interface AddLineRequest {
-	line: string;
-}
+import type { AddLineRequest, Poem, QuoteResponse } from "@/types/poem";
 
 // Base URL for the API (can be configured or moved to environment variables)
 const API_BASE_URL = "/api"; // Assuming the API is served from the same origin
@@ -34,12 +20,12 @@ export async function getRandomQuote(): Promise<QuoteResponse> {
  * Fetches the current poem.
  * @returns A promise that resolves to the current poem data.
  */
-export async function getCurrentPoem(): Promise<PoemResponse> {
+export async function getCurrentPoem(): Promise<Poem> {
 	const response = await fetch(`${API_BASE_URL}/poems/current`);
 	if (!response.ok) {
 		throw new Error(`HTTP error! status: ${response.status}`);
 	}
-	const data: PoemResponse = await response.json();
+	const data: Poem = await response.json();
 	return data;
 }
 
@@ -48,12 +34,12 @@ export async function getCurrentPoem(): Promise<PoemResponse> {
  * @param id - The ID of the poem to fetch.
  * @returns A promise that resolves to the poem data.
  */
-export async function getPoemById(id: string): Promise<PoemResponse> {
+export async function getPoemById(id: string): Promise<Poem> {
 	const response = await fetch(`${API_BASE_URL}/poems/${id}`); // Corrected path to include id
 	if (!response.ok) {
 		throw new Error(`HTTP error! status: ${response.status}`);
 	}
-	const data: PoemResponse = await response.json();
+	const data: Poem = await response.json();
 	return data;
 }
 
@@ -62,9 +48,7 @@ export async function getPoemById(id: string): Promise<PoemResponse> {
  * @param line - The line to add to the poem.
  * @returns A promise that resolves to the updated poem data.
  */
-export async function addLineToCurrentPoem(
-	line: string,
-): Promise<PoemResponse> {
+export async function addLineToCurrentPoem(line: string): Promise<Poem> {
 	const requestBody: AddLineRequest = { line };
 	const response = await fetch(`${API_BASE_URL}/poems/current`, {
 		method: "POST",
@@ -77,6 +61,6 @@ export async function addLineToCurrentPoem(
 	if (!response.ok) {
 		throw new Error(`HTTP error! status: ${response.status}`);
 	}
-	const data: PoemResponse = await response.json();
+	const data: Poem = await response.json();
 	return data;
 }
