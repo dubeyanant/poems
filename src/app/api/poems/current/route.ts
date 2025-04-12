@@ -24,25 +24,25 @@ export async function GET() {
 		// Try to find today's poem first
 		let poem = await poemsCollection.findOne({ _id: todayId });
 
-		// If no poem exists for today, get the latest poem
+		// If no poem exists for today, create a new one
 		if (!poem) {
-			// Sort IDs in descending order to get the most recent one
-			const poems = await poemsCollection
-				.find()
-				.sort({ _id: -1 })
-				.limit(1)
-				.toArray();
+			const newPoem: Poem = {
+				_id: todayId,
+				lines: [],
+			};
 
-			if (poems && poems.length > 0) {
-				poem = poems[0];
+			try {
+				await poemsCollection.insertOne(newPoem);
+				console.log(`Poem created successfully with ID: ${todayId}`);
+				poem = newPoem;
+			} catch (insertError) {
+				// Check if the error is due to a duplicate key (rare race condition)
+				// If so, try fetching it again
+				poem = await poemsCollection.findOne({ _id: todayId });
+				if (!poem) {
+					throw insertError; // Re-throw if we still can't find it
+				}
 			}
-		}
-
-		if (!poem) {
-			return NextResponse.json(
-				{ message: "No poems found" },
-				{ status: 404 },
-			);
 		}
 
 		return NextResponse.json(poem, { status: 200 });
