@@ -1,11 +1,12 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import {
 	addLineToCurrentPoem,
 	getCurrentPoem,
 	getPoemById,
 } from "@/lib/apiClient";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useState } from "react";
 
 // Define props interface
 interface PoemEditorProps {
@@ -17,10 +18,8 @@ export default function PoemEditor({ poemIdFromRoute }: PoemEditorProps) {
 	const [currentDate, setCurrentDate] = useState("");
 	const [poemLines, setPoemLines] = useState<string[]>([]);
 	const [userInput, setUserInput] = useState("");
-	const [isFocused, setIsFocused] = useState(false);
 	// Determine initial input visibility based on whether we are viewing a specific poem
 	const [showInput, setShowInput] = useState(!poemIdFromRoute);
-	const editableDivRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		const fetchPoemData = async () => {
@@ -74,38 +73,29 @@ export default function PoemEditor({ poemIdFromRoute }: PoemEditorProps) {
 		// Depend on poemIdFromRoute to refetch if the route changes (though unlikely in this setup)
 	}, [poemIdFromRoute]);
 
-	const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
-		setUserInput(event.currentTarget.textContent ?? "");
+	const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setUserInput(event.target.value);
 	};
 
-	const handleFocus = () => {
-		setIsFocused(true);
-	};
-
-	const handleBlur = () => {
-		setIsFocused(false);
-	};
-
-	const handleKeyDown = async (event: KeyboardEvent<HTMLDivElement>) => {
+	const handleKeyDown = async (event: KeyboardEvent<HTMLInputElement>) => {
 		// Submission should only happen if we are NOT viewing a specific poem by ID
 		if (event.key === "Enter" && !poemIdFromRoute) {
 			event.preventDefault();
-			const lineToAdd = userInput.trim();
+			await submitLine();
+		}
+	};
 
-			if (lineToAdd) {
-				try {
-					// Note: addLineToCurrentPoem might need adjustment if it shouldn't be allowed here
-					// Or the API needs to handle adding to the 'current' poem regardless of view
-					const updatedPoem = await addLineToCurrentPoem(lineToAdd);
-					setPoemLines(updatedPoem.lines);
-					setUserInput("");
-					setShowInput(false);
-					if (editableDivRef.current) {
-						editableDivRef.current.textContent = "";
-					}
-				} catch (error) {
-					console.error("Failed to add line:", error);
-				}
+	const submitLine = async () => {
+		const lineToAdd = userInput.trim();
+
+		if (lineToAdd && !poemIdFromRoute) {
+			try {
+				const updatedPoem = await addLineToCurrentPoem(lineToAdd);
+				setPoemLines(updatedPoem.lines);
+				setUserInput("");
+				setShowInput(false);
+			} catch (error) {
+				console.error("Failed to add line:", error);
 			}
 		}
 	};
@@ -114,24 +104,26 @@ export default function PoemEditor({ poemIdFromRoute }: PoemEditorProps) {
 		<div className="flex flex-col h-screen max-w-5xl mx-auto p-6">
 			<div className="text-lg mb-4">{currentDate}</div>
 			<div className="pl-1 text-2xl italic">
-				{poemLines.map(line => (
-					<p key={line}>{line}</p>
+				{poemLines.map((line, index) => (
+					// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+					<p key={index}>{line}</p>
 				))}
 			</div>
-			{/* Conditionally render based on showInput state */}
+			{/* Conditionally render input field and submit button based on showInput state */}
 			{showInput && (
-				<div
-					ref={editableDivRef}
-					contentEditable={true} // Keep contentEditable true for focus/placeholder logic, but disable submission via handleKeyDown
-					onInput={handleInput}
-					onFocus={handleFocus}
-					onBlur={handleBlur}
-					onKeyDown={handleKeyDown}
-					suppressContentEditableWarning={true}
-					className={`relative text-2xl pl-1 focus:outline-none italic ${
-						!userInput && !isFocused ? "show-placeholder" : ""
-					}`}
-				/>
+				<div className="flex mt-4 gap-3">
+					<input
+						type="text"
+						value={userInput}
+						onChange={handleInputChange}
+						onKeyDown={handleKeyDown}
+						placeholder="Add a line..."
+						className="flex-grow text-2xl pl-3 py-2 italic border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+					/>
+					<Button onClick={submitLine} disabled={!userInput.trim()}>
+						Submit Line
+					</Button>
+				</div>
 			)}
 		</div>
 	);
