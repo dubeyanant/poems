@@ -1,20 +1,7 @@
-import type { AddLineRequest, Poem, QuoteResponse } from "@/types/poem";
+import type { AddLineRequest, Poem } from "@/types/poem";
 
 // Base URL for the API (can be configured or moved to environment variables)
 const API_BASE_URL = "/api"; // Assuming the API is served from the same origin
-
-/**
- * Fetches a random quote.
- * @returns A promise that resolves to the quote data.
- */
-export async function getRandomQuote(): Promise<QuoteResponse> {
-	const response = await fetch(`${API_BASE_URL}/quotes/random`);
-	if (!response.ok) {
-		throw new Error(`HTTP error! status: ${response.status}`);
-	}
-	const data: QuoteResponse = await response.json();
-	return data;
-}
 
 /**
  * Fetches the current poem.
