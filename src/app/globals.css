@@ -130,3 +130,9 @@
 	color: #9ca3af; /* text-gray-400 */
 	pointer-events: none; /* Allows clicking through the placeholder */
 }
+
+@theme {
+	--font-playfair: "Playfair Display", serif;
+	--font-inter: "Inter", sans-serif;
+	--font-lora: "Lora", serif;
+}
