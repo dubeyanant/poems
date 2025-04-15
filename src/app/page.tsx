@@ -12,6 +12,7 @@ export default function Home() {
 	const [hasAddedLine, setHasAddedLine] = useState(false);
 	const [userInput, setUserInput] = useState("");
 	const [formattedDate, setFormattedDate] = useState("");
+	const [showQuote, setShowQuote] = useState(true);
 
 	// Format date from poem ID (format: DDMMYY)
 	function formatDate(id: string) {
@@ -45,6 +46,10 @@ export default function Home() {
 	// Fetch poem data once on component mount
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
+		const startTime = Date.now();
+		const quoteMinTime = 3000; // 3 seconds minimum display time for quote
+		let poemLoaded = false;
+
 		// Set a timeout to handle slow API responses
 		const timeoutId = setTimeout(() => {
 			if (isLoading) {
@@ -52,6 +57,13 @@ export default function Home() {
 				console.warn("API request is taking longer than expected");
 			}
 		}, 5000); // 5 seconds timeout
+
+		// Set a timer for minimum quote display
+		const quoteTimerId = setTimeout(() => {
+			if (poemLoaded) {
+				setShowQuote(false);
+			}
+		}, quoteMinTime);
 
 		// Fetch poem data
 		fetch("/api/poems/current")
@@ -65,13 +77,25 @@ export default function Home() {
 					setFormattedDate(formatDate(data._id));
 				}
 				setIsLoading(false);
+
+				// Check if minimum display time has passed
+				const loadTime = Date.now() - startTime;
+				poemLoaded = true;
+
+				if (loadTime >= quoteMinTime) {
+					setShowQuote(false);
+				}
 			})
 			.catch(error => {
 				console.error("Error fetching poem:", error);
 				setIsLoading(false);
+				setShowQuote(false);
 			});
 
-		return () => clearTimeout(timeoutId);
+		return () => {
+			clearTimeout(timeoutId);
+			clearTimeout(quoteTimerId);
+		};
 	}, []);
 
 	function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -114,12 +138,12 @@ export default function Home() {
 		}
 	}
 
-	// Show quote while loading
-	if (isLoading && !isApiTimedOut) {
+	// Show quote while loading or for minimum display time
+	if (showQuote) {
 		return <QuoteDisplay />;
 	}
 
-	// Show poem once ready or after timeout
+	// Show poem once ready and after minimum quote display time
 	return (
 		<div className="flex flex-col h-screen max-w-5xl mx-auto p-6 font-inter">
 			{isApiTimedOut && !poem && (
