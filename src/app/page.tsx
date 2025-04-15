@@ -121,7 +121,7 @@ export default function Home() {
 
 	// Show poem once ready or after timeout
 	return (
-		<div className="flex flex-col h-screen max-w-5xl mx-auto p-6">
+		<div className="flex flex-col h-screen max-w-5xl mx-auto p-6 font-inter">
 			{isApiTimedOut && !poem && (
 				<div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
 					<p className="text-yellow-700">
@@ -130,33 +130,33 @@ export default function Home() {
 					</p>
 				</div>
 			)}
-			<div className="text-lg mb-4">
+			<div className="text-lg mb-8">
 				{formattedDate || "Loading date..."}
 			</div>
-			<div className="pl-1 text-2xl italic">
+			<div className="px-8 py-5 border-2 border-ring/25 shadow-lg rounded-2xl text-xl font-lora bg-popover">
 				{poem?.lines.map((line, index) => (
 					// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
 					<p key={index}>{line}</p>
 				))}
+				{!hasAddedLine && (
+					<div className="flex mt-4 gap-3">
+						<input
+							type="text"
+							value={userInput}
+							onChange={handleInputChange}
+							placeholder="Add a line to the poem..."
+							className="border-b-2 border-ring/25 focus-visible:outline-0 focus-visible:border-ring/50 transition-colors grow"
+						/>
+						<Button
+							type="submit"
+							onClick={submitLine}
+							disabled={!userInput.trim()}
+						>
+							Submit Line
+						</Button>
+					</div>
+				)}
 			</div>
-			{!hasAddedLine && (
-				<div className="flex mt-4 gap-3">
-					<input
-						type="text"
-						value={userInput}
-						onChange={handleInputChange}
-						placeholder="Add a line..."
-						className="flex-grow text-2xl pl-3 py-2 italic border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-					/>
-					<Button
-						type="submit"
-						onClick={submitLine}
-						disabled={!userInput.trim()}
-					>
-						Submit Line
-					</Button>
-				</div>
-			)}
 		</div>
 	);
 }

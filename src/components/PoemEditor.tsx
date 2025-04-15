@@ -73,9 +73,9 @@ export default function PoemEditor() {
 	};
 
 	return (
-		<div className="flex flex-col h-screen max-w-5xl mx-auto p-6">
+		<div className="flex flex-col h-screen max-w-5xl mx-auto p-6 font-inter">
 			<div className="text-lg mb-4">Poem date will appear here</div>
-			<div className="pl-1 text-2xl italic">
+			<div className="pl-1 text-2xl italic font-lora">
 				{poem?.lines.map((line, index) => (
 					// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
 					<p key={index}>{line}</p>
@@ -88,7 +88,7 @@ export default function PoemEditor() {
 						value={userInput}
 						onChange={handleInputChange}
 						placeholder="Add a line..."
-						className="flex-grow text-2xl pl-3 py-2 italic border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+						className="flex-grow text-2xl pl-3 py-2 italic font-lora border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
 					/>
 					<Button
 						type="submit"

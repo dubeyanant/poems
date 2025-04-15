@@ -30,7 +30,7 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body
-				className={`${playfairDisplay.variable} ${inter.variable} ${lora.variable} font-inter antialiased`}
+				className={`${playfairDisplay.variable} ${inter.variable} ${lora.variable} font-inter antialiased bg-background`}
 			>
 				{children}
 			</body>

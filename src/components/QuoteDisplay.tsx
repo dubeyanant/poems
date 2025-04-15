@@ -7,10 +7,10 @@ export default function QuoteDisplay() {
 
 	return (
 		<div className="flex flex-col justify-center items-center h-screen max-w-5xl mx-auto p-6 text-center">
-			<blockquote className="text-xl md:text-2xl mb-4">
+			<blockquote className="font-playfair text-xl md:text-2xl mb-4">
 				{quote}
 			</blockquote>
-			<cite className="text-lg">— {author} —</cite>
+			<cite className="font-lora text-lg">— {author} —</cite>
 		</div>
 	);
 }
