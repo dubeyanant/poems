@@ -6,64 +6,81 @@ import type { Poem } from "@/types/poem";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-	const [showPoem, setShowPoem] = useState(false);
 	const [poem, setPoem] = useState<Poem | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isApiTimedOut, setIsApiTimedOut] = useState(false);
 	const [hasAddedLine, setHasAddedLine] = useState(false);
 	const [userInput, setUserInput] = useState("");
+	const [formattedDate, setFormattedDate] = useState("");
 
-	// Load poem data on mount
+	// Format date from poem ID (format: DDMMYY)
+	function formatDate(id: string) {
+		if (!id || id.length < 6) return "";
+
+		const day = id.substring(0, 2);
+		const monthNum = Number.parseInt(id.substring(2, 4), 10);
+		const year = id.substring(4);
+
+		// Convert 2-digit year to 4-digit year
+		const fullYear = year.length === 2 ? `20${year}` : year;
+
+		const months = [
+			"January",
+			"February",
+			"March",
+			"April",
+			"May",
+			"June",
+			"July",
+			"August",
+			"September",
+			"October",
+			"November",
+			"December",
+		];
+
+		return `${day} ${months[monthNum - 1]}, ${fullYear}`;
+	}
+
+	// Fetch poem data once on component mount
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
-		const fetchPoemData = async () => {
-			try {
-				const response = await fetch("/api/poems/current");
-				if (!response.ok) {
-					throw new Error("Failed to fetch poem");
-				}
-				const data: Poem = await response.json();
-				setPoem(data);
-			} catch (error) {
-				console.error("Error fetching poem:", error);
-			} finally {
-				setIsLoading(false);
+		// Set a timeout to handle slow API responses
+		const timeoutId = setTimeout(() => {
+			if (isLoading) {
+				setIsApiTimedOut(true);
+				console.warn("API request is taking longer than expected");
 			}
-		};
+		}, 5000); // 5 seconds timeout
 
-		fetchPoemData();
+		// Fetch poem data
+		fetch("/api/poems/current")
+			.then(response => {
+				if (!response.ok) throw new Error("Failed to fetch poem");
+				return response.json();
+			})
+			.then(data => {
+				setPoem(data);
+				if (data._id) {
+					setFormattedDate(formatDate(data._id));
+				}
+				setIsLoading(false);
+			})
+			.catch(error => {
+				console.error("Error fetching poem:", error);
+				setIsLoading(false);
+			});
+
+		return () => clearTimeout(timeoutId);
 	}, []);
 
-	// Show poem after minimum 3 seconds AND when data is loaded
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			if (!isLoading) {
-				setShowPoem(true);
-			}
-		}, 3000);
-
-		return () => clearTimeout(timer);
-	}, [isLoading]);
-
-	// If data loads before 3 seconds, wait until timer completes
-	useEffect(() => {
-		if (!isLoading && !showPoem) {
-			const remainingTime = setTimeout(() => {
-				setShowPoem(true);
-			}, 3000);
-
-			return () => clearTimeout(remainingTime);
-		}
-	}, [isLoading, showPoem]);
-
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+	function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
 		setUserInput(e.target.value);
-	};
+	}
 
-	const submitLine = async () => {
+	async function submitLine() {
 		const trimmedInput = userInput.trim();
-
-		if (!trimmedInput) {
-			return;
-		}
+		if (!trimmedInput) return;
 
 		try {
 			// Optimistically update UI
@@ -80,14 +97,11 @@ export default function Home() {
 			// Send to API
 			await fetch("/api/poems/current", {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ line: trimmedInput }),
 			});
 		} catch (error) {
 			console.error("Error adding line:", error);
-
 			// Revert optimistic update on failure
 			setPoem(prev => {
 				if (!prev) return prev;
@@ -98,17 +112,27 @@ export default function Home() {
 			});
 			setHasAddedLine(false);
 		}
-	};
+	}
 
-	// Show quote while loading or during initial 3 seconds
-	if (!showPoem) {
+	// Show quote while loading
+	if (isLoading && !isApiTimedOut) {
 		return <QuoteDisplay />;
 	}
 
-	// Show poem once ready
+	// Show poem once ready or after timeout
 	return (
 		<div className="flex flex-col h-screen max-w-5xl mx-auto p-6">
-			<div className="text-lg mb-4">Poem date will appear here</div>
+			{isApiTimedOut && !poem && (
+				<div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+					<p className="text-yellow-700">
+						Taking longer than usual to load the poem. Please wait
+						or refresh the page.
+					</p>
+				</div>
+			)}
+			<div className="text-lg mb-4">
+				{formattedDate || "Loading date..."}
+			</div>
 			<div className="pl-1 text-2xl italic">
 				{poem?.lines.map((line, index) => (
 					// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
